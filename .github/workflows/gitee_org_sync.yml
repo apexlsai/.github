@@ -17,6 +17,41 @@ jobs:
   run-gitee-sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Ensure Gitee repositories are private
+        run: |
+          set -e
+          REPOS="${{ inputs.repository }}"
+          if [ -z "$REPOS" ]; then
+            echo "从 GitHub 获取组织仓库列表..."
+            REPOS=$(curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" \
+              "https://api.github.com/orgs/apexlsai/repos?per_page=100" | \
+              jq -r '.[].name' | paste -sd ',')
+          fi
+          IFS=',' read -ra REPO_ARRAY <<< "$REPOS"
+          for repo in "${REPO_ARRAY[@]}"; do
+            repo=$(echo "$repo" | xargs)
+            [ -z "$repo" ] && continue
+            echo "确保 Gitee 仓库 $repo 为私有..."
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              "https://gitee.com/api/v5/orgs/apexlsai/repos" \
+              -d "name=$repo" \
+              -d "private=true" \
+              -d "access_token=${{ secrets.GITEE_TOKEN }}")
+            status=$(echo "$response" | tail -n1)
+            if [ "$status" = "201" ]; then
+              echo "已创建私有仓库 $repo。"
+            elif [ "$status" = "422" ]; then
+              echo "$repo 已存在，更新为私有..."
+              curl -s -o /dev/null -X PATCH \
+                "https://gitee.com/api/v5/repos/apexlsai/$repo" \
+                -d "private=true" \
+                -d "access_token=${{ secrets.GITEE_TOKEN }}"
+            else
+              echo "$repo 处理失败，状态码: $status"
+            fi
+          done
+        shell: bash
+
       - name: Mirror GitHub Org to Gitee Org
         uses: Yikun/hub-mirror-action@master
         with:
