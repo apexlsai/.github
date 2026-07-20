@@ -25,8 +25,9 @@ jobs:
           # SSH 私钥用于 Git 推送；令牌用于查询及自动创建 Gitee 仓库。
           dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
           dst_token: ${{ secrets.GITEE_TOKEN }}
+          # GitHub token 用于读取组织内的私有仓库列表。
+          src_token: ${{ secrets.GH_PAT }}
           account_type: org
           # 手动运行时可填写单个仓库名；留空则同步整个组织。
           static_list: ${{ inputs.repository }}
           force_update: true
-          auto_create_repo: true
