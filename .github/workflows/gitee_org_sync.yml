@@ -28,6 +28,7 @@ jobs:
           # GitHub token 用于读取组织内的私有仓库列表。
           src_token: ${{ secrets.GH_PAT }}
           account_type: org
+          clone_style: ssh
           # 手动运行时可填写单个仓库名；留空则同步整个组织。
           static_list: ${{ inputs.repository }}
           force_update: true
