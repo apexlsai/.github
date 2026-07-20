@@ -1,0 +1,32 @@
+name: Sync Organization to Gitee
+
+on:
+  push:
+    branches: [ main, master ]
+  schedule:
+    # 每天凌晨 2 点自动全量同步一次（防止漏掉分支/新库）
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: '要同步的单个仓库名；留空则同步全部仓库'
+        required: false
+        type: string
+
+jobs:
+  run-gitee-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror GitHub Org to Gitee Org
+        uses: Yikun/hub-mirror-action@master
+        with:
+          src: github/apexlsai
+          dst: gitee/apexlsai
+          # SSH 私钥用于 Git 推送；令牌用于查询及自动创建 Gitee 仓库。
+          dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
+          dst_token: ${{ secrets.GITEE_TOKEN }}
+          account_type: org
+          # 手动运行时可填写单个仓库名；留空则同步整个组织。
+          static_list: ${{ inputs.repository }}
+          force_update: true
+          auto_create_repo: true
